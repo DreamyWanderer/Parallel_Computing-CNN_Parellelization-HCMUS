@@ -31,6 +31,7 @@ int main() {
   dataset.read();
   int n_train = dataset.train_data.cols();
   int dim_in = dataset.train_data.rows();
+  std::cout << "Hello world" << std::endl;
   std::cout << "mnist train number: " << n_train << std::endl;
   std::cout << "mnist test number: " << dataset.test_labels.cols() << std::endl;
   // dnn
