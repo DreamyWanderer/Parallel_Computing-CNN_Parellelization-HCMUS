@@ -49,6 +49,7 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
   }
 }
 
+// TO PARALLELIZE
 void Conv::forward(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
