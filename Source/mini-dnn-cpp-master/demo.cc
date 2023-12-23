@@ -24,7 +24,7 @@
 #include "src/optimizer.h"
 #include "src/optimizer/sgd.h"
 
-
+/*
 int main() {
   // data
   MNIST dataset("../data/mnist/");
@@ -96,4 +96,4 @@ int main() {
   }
   return 0;
 }
-
+*/

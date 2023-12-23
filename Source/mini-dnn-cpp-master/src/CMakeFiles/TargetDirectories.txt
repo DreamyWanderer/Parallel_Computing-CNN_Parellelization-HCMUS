@@ -1,0 +1,6 @@
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/CMakeFiles/demo.dir
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/CMakeFiles/edit_cache.dir
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/CMakeFiles/rebuild_cache.dir
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/src/CMakeFiles/MiniDNNLib.dir
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/src/CMakeFiles/edit_cache.dir
+/d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master/src/src/CMakeFiles/rebuild_cache.dir
