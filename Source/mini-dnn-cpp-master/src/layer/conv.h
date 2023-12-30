@@ -22,7 +22,10 @@ class Conv: public Layer {
   int height_out;
   int width_out;
 
+public:
   Matrix weight;  // weight param, size=channel_in*h_kernel*w_kernel*channel_out
+
+private:
   Vector bias;  // bias param, size = channel_out
   Matrix grad_weight;  // gradient w.r.t weight
   Vector grad_bias;  // gradient w.r.t bias
@@ -44,6 +47,7 @@ class Conv: public Layer {
   void forward(const Matrix& bottom);
   void backward(const Matrix& bottom, const Matrix& grad_top);
   void update(Optimizer& opt);
+  void unroll(int C, int H, int W, int K, const Vector& image, Matrix& data_col);
   void im2col(const Vector& image, Matrix& data_col);
   void col2im(const Matrix& data_col, Vector& image);
   int output_dim() { return dim_out; }

@@ -24,8 +24,8 @@
 #include "src/optimizer.h"
 #include "src/optimizer/sgd.h"
 
-/*
-int main() {
+
+/* int main() {
   // data
   MNIST dataset("../data/mnist/");
   dataset.read();
@@ -95,5 +95,5 @@ int main() {
     std::cout << std::endl;
   }
   return 0;
-}
-*/
+} */
+

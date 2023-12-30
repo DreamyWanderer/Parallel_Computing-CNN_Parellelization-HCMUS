@@ -1,9 +1,3 @@
-/*
- * CNN demo for MNIST dataset
- * Author: Kai Han (kaihana@163.com)
- * Details in https://github.com/iamhankai/mini-dnn-cpp
- * Copyright 2018 Kai Han
- */
 #include <Eigen/Dense>
 #include <algorithm>
 #include <iostream>
@@ -24,6 +18,8 @@
 #include "src/optimizer.h"
 #include "src/optimizer/sgd.h"
 
+#include "src/layer/cuda_utilities.h"
+#include <thread>
 
 int main() {
   // data
@@ -31,7 +27,6 @@ int main() {
   dataset.read();
   int n_train = dataset.train_data.cols();
   int dim_in = dataset.train_data.rows();
-  std::cout << "Hello world" << std::endl;
   std::cout << "mnist train number: " << n_train << std::endl;
   std::cout << "mnist test number: " << dataset.test_labels.cols() << std::endl;
   // dnn
@@ -40,9 +35,9 @@ int main() {
   Layer* S2 = new MaxPooling(6, 24, 24, 2, 2, 2);
   Layer* C3 = new Conv(6, 12, 12, 16, 5, 5, 1);
   Layer* S4 = new MaxPooling(16, 8, 8, 2, 2, 2);
-  Layer* C5 = new Conv(16, 4, 4, 120, 4, 4, 1);
-  Layer* F6 = new FullyConnected(120, 84);
-  Layer* F7 = new FullyConnected(84, 10);
+  Layer* F6 = new FullyConnected(S4->output_dim(), 120);
+  Layer* F7 = new FullyConnected(120, 84);
+  Layer* F8 = new FullyConnected(84, 10);
   Layer* relu1 = new ReLU;
   Layer* relu2 = new ReLU;
   Layer* relu3 = new ReLU;
@@ -55,13 +50,13 @@ int main() {
   dnn.add_layer(C3);
   dnn.add_layer(relu2);
   dnn.add_layer(S4);
-  dnn.add_layer(C5);
-  dnn.add_layer(relu3);
   dnn.add_layer(F6);
-  dnn.add_layer(relu4);
+  dnn.add_layer(relu3);
   dnn.add_layer(F7);
+  dnn.add_layer(relu4);
+  dnn.add_layer(F8);
   dnn.add_layer(softmax);
-
+  
   // loss
   Loss* loss = new CrossEntropy;
   dnn.add_loss(loss);
@@ -83,7 +78,11 @@ int main() {
         std::cout << ith_batch << "-th grad: " << std::endl;
         dnn.check_gradient(x_batch, target_batch, 10);
       }
+
+      startTimer();
       dnn.forward(x_batch);
+      std::cout << "Forward time : " << stopTimer() << std::endl;
+
       dnn.backward(x_batch, target_batch);
       // display
       if (ith_batch % 50 == 0) {
@@ -101,5 +100,5 @@ int main() {
     std::cout << std::endl;
   }
   return 0;
-} 
+}
 

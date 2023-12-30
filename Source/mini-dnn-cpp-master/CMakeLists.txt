@@ -1,5 +1,8 @@
 cmake_minimum_required (VERSION 3.0)
-project (myproject)
+project (myproject CXX CUDA)
+enable_language(CUDA)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CUDA_ARCHITECTURES 75)
 include_directories ("${PROJECT_SOURCE_DIR}/third_party/eigen")
 # 查找当前目录下的所有源文件
 # 并将名称保存到 DIR_SRCS 变量

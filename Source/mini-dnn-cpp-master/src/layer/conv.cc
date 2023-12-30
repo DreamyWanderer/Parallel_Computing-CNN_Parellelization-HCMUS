@@ -1,4 +1,5 @@
 #include "conv.h"
+#include "cuda_utilities.h"
 #include <math.h>
 #include <iostream>
 
@@ -12,9 +13,7 @@ void Conv::init() {
   grad_weight.resize(channel_in * height_kernel * width_kernel, channel_out);
   grad_bias.resize(channel_out);
   set_normal_random(weight.data(), weight.size(), 0, 0.01);
-  set_normal_random(bias.data(), bias.size(), 0, 0.01);
-  //std::cout << weight.colwise().sum() << std::endl;
-  //std::cout << weight.colwise().sum() + bias.transpose() << std::endl;
+  set_normal_random(bias.data(), bias.size(), 0, 0.01); 
 }
 
 // im2col, used for bottom
@@ -49,13 +48,14 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
   }
 }
 
-// TO PARALLELIZE
+// ORIGINAL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
+  //startTimer();.
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
   for (int i = 0; i < n_sample; i ++) {
-    // im2col
+    // im2cols
     Matrix data_col;
     im2col(bottom.col(i), data_col);
     data_cols[i] = data_col;
@@ -63,6 +63,50 @@ void Conv::forward(const Matrix& bottom) {
     Matrix result = data_col * weight;  // result: (hw_out, channel_out)
     result.rowwise() += bias.transpose();
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+  }
+  //std::cout << "Conv forward time: " << stopTimer() << std::endl;
+}
+
+/* // PARALELLIZE FORWARD IMPLEMENTATION
+void Conv::forward(const Matrix& bottom) {
+  // Check the dimension of bottom
+  int n_sample = bottom.cols();
+  top.resize(height_out * width_out * channel_out, n_sample);
+  data_cols.resize(n_sample);
+  for (int i = 0; i < n_sample; i ++) {
+    // im2col
+    Matrix data_col;
+    unroll(channel_in, height_in, width_in, height_kernel, bottom.col(i), data_col);
+    data_cols[i] = data_col.transpose();
+    // conv by product
+    Matrix result = weight.transpose() * data_col;  // result: (channel_out, hw_out)
+    result.transposeInPlace();
+    result.rowwise() += bias.transpose();
+    top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+  }
+} */
+
+// image size: Vector (height_in * width_in * channel_in)
+// data_col size: Matrix (hw_kernel * channel_in, hw_out)
+void Conv::unroll(int C, int H, int W, int K, const Vector& image, Matrix& data_col) {
+  int c, h, w, p, q, w_base, w_unroll, h_unroll;
+
+  int H_out = H - K + 1; // Only for stride = 1
+  int W_out = W - K + 1; // Only for stride = 1
+  data_col.resize(C * K * K, H_out * W_out);
+
+  for (c = 0; c < C; c++) { // For each input feature map (or each color channel)
+    w_base = c * (K * K);
+    for (p = 0; p < K; p++)
+      for (q = 0; q < K; q++) { // For each input element in a local calculating kernel
+        for (h = 0; h < H_out; h++)
+          for (w = 0; w < W_out; w++) {
+            w_unroll = w_base + p * K + q;
+            h_unroll = h * W_out + w;
+            data_col(w_unroll, h_unroll) = image(c * H * W + (h + p) * W + (w + q));
+          }
+
+      }
   }
 }
 
