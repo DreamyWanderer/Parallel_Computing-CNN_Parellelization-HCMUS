@@ -20,6 +20,8 @@
 
 #include "src/layer/cuda_utilities.h"
 #include <thread>
+#include <vector>
+#include <numeric>
 
 int main() {
   // data
@@ -65,8 +67,10 @@ int main() {
   // SGD opt(0.001);
   const int n_epoch = 5;
   const int batch_size = 128;
+  std::vector<float> timeAForwadHistory;
   for (int epoch = 0; epoch < n_epoch; epoch ++) {
     shuffle_data(dataset.train_data, dataset.train_labels);
+    timeAForwadHistory.clear();
     for (int start_idx = 0; start_idx < n_train; start_idx += batch_size) {
       int ith_batch = start_idx / batch_size;
       Matrix x_batch = dataset.train_data.block(0, start_idx, dim_in,
@@ -81,13 +85,13 @@ int main() {
 
       startTimer();
       dnn.forward(x_batch);
-      std::cout << "Forward time : " << stopTimer() << std::endl;
+      timeAForwadHistory.push_back(stopTimer());
 
       dnn.backward(x_batch, target_batch);
       // display
       if (ith_batch % 50 == 0) {
         std::cout << ith_batch << "-th batch, loss: " << dnn.get_loss()
-        << std::endl;
+        <<", time forwading avearage: " << std::accumulate(timeAForwadHistory.begin(), timeAForwadHistory.end(), 0.0) / timeAForwadHistory.size() << std::endl;
       }
       // optimize
       dnn.update(opt);

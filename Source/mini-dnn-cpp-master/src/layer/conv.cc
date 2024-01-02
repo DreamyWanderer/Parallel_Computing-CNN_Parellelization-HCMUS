@@ -48,9 +48,8 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
   }
 }
 
-// ORIGINAL FORWARD IMPLEMENTATION
+/* // ORIGINAL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
-  //startTimer();.
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -64,12 +63,10 @@ void Conv::forward(const Matrix& bottom) {
     result.rowwise() += bias.transpose();
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
   }
-  //std::cout << "Conv forward time: " << stopTimer() << std::endl;
-}
+} */
 
-/* // PARALELLIZE FORWARD IMPLEMENTATION
+/* // SEQUENTIAL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
-  // Check the dimension of bottom
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -77,23 +74,45 @@ void Conv::forward(const Matrix& bottom) {
     // im2col
     Matrix data_col;
     unroll(channel_in, height_in, width_in, height_kernel, bottom.col(i), data_col);
-    data_cols[i] = data_col.transpose();
+    // Check the dimension of data_col
+    data_cols[i] = data_col;
     // conv by product
-    Matrix result = weight.transpose() * data_col;  // result: (channel_out, hw_out)
-    result.transposeInPlace();
+    Matrix result = data_col * weight;  // result: (channel_out, hw_out)
     result.rowwise() += bias.transpose();
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
   }
 } */
 
+// VERSION 1 OF PARALLEL FORWARD IMPLEMENTATION
+void Conv::forward(const Matrix& bottom) {
+  int n_sample = bottom.cols();
+  top.resize(height_out * width_out * channel_out, n_sample);
+  data_cols.resize(n_sample);
+  float* dataColData = (float *)malloc(height_kernel * width_kernel * channel_in * height_out * width_out * sizeof(float));
+  for (int i = 0; i < n_sample; i ++) {
+    // im2col
+    float* imageData = (float *)(bottom.col(i)).transpose().data();
+    unrollGPUWrapper(channel_in, height_in, width_in, height_kernel, imageData, dataColData);
+    Matrix data_col = Eigen::Map<Matrix>(dataColData, height_out * width_out, height_kernel * width_kernel * channel_in);
+
+    data_cols[i] = data_col;
+    // conv by product
+    Matrix result = data_col * weight;  // result: (hw_out, channel_out)
+    result.rowwise() += bias.transpose();
+    top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+  }
+
+  free(dataColData);
+}
+
 // image size: Vector (height_in * width_in * channel_in)
-// data_col size: Matrix (hw_kernel * channel_in, hw_out)
+// data_col size: Matrix (hw_out, hw_kernel * channel_in)
 void Conv::unroll(int C, int H, int W, int K, const Vector& image, Matrix& data_col) {
   int c, h, w, p, q, w_base, w_unroll, h_unroll;
 
-  int H_out = H - K + 1; // Only for stride = 1
+  int H_out = H - K + 1; // Only for stride = 1 v
   int W_out = W - K + 1; // Only for stride = 1
-  data_col.resize(C * K * K, H_out * W_out);
+  data_col.resize(H_out * W_out, C * K * K);
 
   for (c = 0; c < C; c++) { // For each input feature map (or each color channel)
     w_base = c * (K * K);
@@ -103,7 +122,7 @@ void Conv::unroll(int C, int H, int W, int K, const Vector& image, Matrix& data_
           for (w = 0; w < W_out; w++) {
             w_unroll = w_base + p * K + q;
             h_unroll = h * W_out + w;
-            data_col(w_unroll, h_unroll) = image(c * H * W + (h + p) * W + (w + q));
+            data_col(h_unroll, w_unroll) = image(c * H * W + (h + p) * W + (w + q));
           }
 
       }
