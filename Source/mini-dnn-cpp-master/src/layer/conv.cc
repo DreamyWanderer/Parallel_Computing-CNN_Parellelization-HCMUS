@@ -48,6 +48,7 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
   }
 }
 
+// Uncomment this and only this for version A1
 /* // ORIGINAL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
   int n_sample = bottom.cols();
@@ -65,6 +66,7 @@ void Conv::forward(const Matrix& bottom) {
   }
 } */
 
+// Uncomment this and comment other forward() for version B0 
 /* // SEQUENTIAL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
   int n_sample = bottom.cols();

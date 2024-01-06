@@ -74,12 +74,6 @@ float stopTimer()
 	return timer.Elapsed();
 }
 
-int test()
-{
-	std::cout << "Hello from test\n";
-	return 1;
-}
-
 __global__ void unrollKernel_1(int C, int H, int W, int K, float* image, float* data_col)
 {
 	int c, s, h_out, w_out, h_unroll, w_unroll, w_base, p, q;
