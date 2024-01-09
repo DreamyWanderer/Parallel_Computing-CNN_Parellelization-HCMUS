@@ -2,6 +2,15 @@
 #include "cuda_utilities.h"
 #include <math.h>
 #include <iostream>
+#include <fstream>
+
+void printMatrix(Matrix &m, std::string fileName)
+{
+  std::ofstream myfile;
+  myfile.open(fileName);
+  myfile << m << std::endl;
+  myfile.close();
+}
 
 void Conv::init() {
   height_out = (1 + (height_in - height_kernel + 2 * pad_h) / stride);
@@ -85,7 +94,7 @@ void Conv::forward(const Matrix& bottom) {
   }
 } */
 
-// VERSION 1 OF PARALLEL FORWARD IMPLEMENTATION
+/* // VERSION 1 OF PARALLEL FORWARD IMPLEMENTATION
 void Conv::forward(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
@@ -104,6 +113,48 @@ void Conv::forward(const Matrix& bottom) {
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
   }
 
+  free(dataColData);
+} */
+
+// VERSION 2 OF PARALLEL FORWARD IMPLEMENTATION
+void Conv::forward(const Matrix& bottom) {
+  int n_sample = bottom.cols();
+  top.resize(height_out * width_out * channel_out, n_sample);
+  data_cols.resize(n_sample);
+
+  float* dataColData = (float *)malloc(height_kernel * width_kernel * channel_in * height_out * width_out * sizeof(float));
+  float* h_C = (float*)calloc( (height_out * width_out) * channel_out, sizeof(float));
+
+  for (int i = 0; i < n_sample; i ++) {
+    // im2col
+    float* imageData = (float *)(bottom.col(i)).transpose().data();
+    unrollGPUWrapper(channel_in, height_in, width_in, height_kernel, imageData, dataColData);
+    Matrix data_col = Eigen::Map<Matrix>(dataColData, height_out * width_out, height_kernel * width_kernel * channel_in);
+    data_cols[i] = data_col;
+
+    // conv by product
+    matrixMultiplicationGPUWrapper(data_col.data(), weight.data(), h_C,
+                                   height_out * width_out, height_kernel * width_kernel * channel_in, channel_out, i);
+    Matrix result = Eigen::Map<Matrix>(h_C, height_out * width_out, channel_out); 
+    //result.transposeInPlace(); // result: (hw_out, channel_out)
+    //Matrix resultTranpose = result.transpose().eval(); // result: (hw_out, channel_out)
+
+    /* // Print the result
+    if (i == 2) {
+      Matrix result_2 = data_col * weight;
+      printMatrix(result, "result.txt");
+      printMatrix(result_2, "result_2.txt");
+      printMatrix(data_col, "data_col.txt");
+      printMatrix(weight, "weight.txt");
+      exit(0);
+    } */
+
+    result.rowwise() += bias.transpose();
+    //result.transposeInPlace();
+    top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+  }
+
+  free(h_C);
   free(dataColData);
 }
 
