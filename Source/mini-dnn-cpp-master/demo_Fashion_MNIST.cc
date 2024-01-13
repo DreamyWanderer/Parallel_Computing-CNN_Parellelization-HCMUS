@@ -21,11 +21,13 @@
 
 #include "src/layer/cuda_utilities.h"
 #include "config.h"
+#include "testImplement.h"
 #include <thread>
 #include <vector>
 #include <numeric>
 
 const bool IS_TRAINING = false;
+const bool IS_CREATING_TEST_CASES = false;
 
 namespace config 
 {
@@ -64,14 +66,12 @@ void loadNetworkParameters(Network& network, std::string filename) {
 
     network.set_parameters(parameters);
     std::cout << "Parameters loaded" << std::endl;
-    saveNetworkParameters(network, "../../Model/parameters_check_2.txt");
   }
 }
 
 void testing(Network& dnn, MNIST& dataset, int epoch) {
   startTimer();    
   dnn.forward(dataset.test_data);
-  std::cout << "\nCurrent version: " << config::currentVersion << std::endl;
   std::cout << "Test time: " << stopTimer() << std::endl;
    
   float acc = compute_accuracy(dnn.output(), dataset.test_labels);
@@ -133,12 +133,28 @@ int main(int argc, char** argv) {
   const int n_epoch = 5;
   const int batch_size = 128;
 
+  if (IS_CREATING_TEST_CASES) {
+    config::currentVersion = -1;
+    loadNetworkParameters(dnn, filename);
+    createTestCasesForLayer(10, 1 * 28 * 28, 1, "../test/conv_1", C1);
+    createTestCasesForLayer(10, 6 * 12 * 12, 1, "../test/conv_2", C3);
+  }
+
   if (!IS_TRAINING) {
     for (int v = config::startVersion; v <= config::endVersion; v++)
     {
       config::currentVersion = v;
       loadNetworkParameters(dnn, filename);
+      std::cout << "\nCurrent version: " << config::currentVersion << "\n\n";
+
+      // Check if the implementation of forward of Conv layer is correct
+      runTestCasesForLayer(10, 1 * 28 * 28, 1, "../test/conv_1", C1);
+      runTestCasesForLayer(10, 6 * 12 * 12, 1, "../test/conv_2", C3);
+      std::cout << "\n\n";
+
+      // Run on the test set
       testing(dnn, dataset, 0);
+      std::cout << "------------------------------------------\n" << std::endl;
 
       if (!config::runAllVersion)
         break;
