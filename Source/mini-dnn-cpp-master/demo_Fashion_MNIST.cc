@@ -20,11 +20,21 @@
 #include "src/optimizer/sgd.h"
 
 #include "src/layer/cuda_utilities.h"
+#include "config.h"
 #include <thread>
 #include <vector>
 #include <numeric>
 
 const bool IS_TRAINING = false;
+
+namespace config 
+{
+  int currentVersion = 2;
+  int startVersion = 2;
+  int endVersion = 2;
+  bool runAllVersion = false;
+  float forwardTime = 0;
+}
 
 void saveNetworkParameters(Network& network, std::string filename) {
   std::ofstream file(filename);
@@ -61,17 +71,21 @@ void loadNetworkParameters(Network& network, std::string filename) {
 void testing(Network& dnn, MNIST& dataset, int epoch) {
   startTimer();    
   dnn.forward(dataset.test_data);
+  std::cout << "\nCurrent version: " << config::currentVersion << std::endl;
   std::cout << "Test time: " << stopTimer() << std::endl;
-  
+   
   float acc = compute_accuracy(dnn.output(), dataset.test_labels);
-  std::cout << std::endl;
-  std::cout << epoch + 1 << "-th epoch, test acc: " << acc << std::endl;
+  std::cout << "Test acc: " << acc << std::endl;
   std::cout << std::endl;
 
   saveNetworkParameters(dnn, "../../Model/parameters_check.txt");
 }
 
-int main() {
+int main(int argc, char** argv) {
+  config::startVersion = std::stoi(argv[1]);
+  config::endVersion = std::stoi(argv[2]);
+  config::runAllVersion = std::stoi(argv[3]);
+
   // data
   MNIST dataset("../data/fashion-mnist/");
   dataset.read();
@@ -120,8 +134,15 @@ int main() {
   const int batch_size = 128;
 
   if (!IS_TRAINING) {
-    loadNetworkParameters(dnn, filename);
-    testing(dnn, dataset, 0);
+    for (int v = config::startVersion; v <= config::endVersion; v++)
+    {
+      config::currentVersion = v;
+      loadNetworkParameters(dnn, filename);
+      testing(dnn, dataset, 0);
+
+      if (!config::runAllVersion)
+        break;
+    }
 
     return 0;
   }

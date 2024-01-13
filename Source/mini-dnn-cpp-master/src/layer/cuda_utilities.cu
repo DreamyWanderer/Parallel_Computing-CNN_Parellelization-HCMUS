@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda_utilities.h"
+#include "../../config.h"
 
 #define TILE_WIDTH 32
 

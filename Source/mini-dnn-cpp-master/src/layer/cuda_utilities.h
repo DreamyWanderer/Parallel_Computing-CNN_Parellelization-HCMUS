@@ -1,3 +1,5 @@
+#pragma once
+
 void startTimer();
 float stopTimer();
 

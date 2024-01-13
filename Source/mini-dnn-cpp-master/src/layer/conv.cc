@@ -1,5 +1,6 @@
 #include "conv.h"
 #include "cuda_utilities.h"
+#include "../../config.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -57,9 +58,8 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
   }
 }
 
-// Uncomment this and only this for version A1
-/* // ORIGINAL FORWARD IMPLEMENTATION
-void Conv::forward(const Matrix& bottom) {
+// ORIGINAL FORWARD IMPLEMENTATION
+void Conv::forwardOriginal(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -73,11 +73,10 @@ void Conv::forward(const Matrix& bottom) {
     result.rowwise() += bias.transpose();
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
   }
-} */
+}
 
-// Uncomment this and comment other forward() for version B0 
-/* // SEQUENTIAL FORWARD IMPLEMENTATION
-void Conv::forward(const Matrix& bottom) {
+// SEQUENTIAL FORWARD IMPLEMENTATION
+void Conv::forwardVersion_0(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -92,10 +91,10 @@ void Conv::forward(const Matrix& bottom) {
     result.rowwise() += bias.transpose();
     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
   }
-} */
+}
 
-/* // VERSION 1 OF PARALLEL FORWARD IMPLEMENTATION
-void Conv::forward(const Matrix& bottom) {
+// VERSION 1 OF PARALLEL FORWARD IMPLEMENTATION
+void Conv::forwardVersion_1(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -114,10 +113,10 @@ void Conv::forward(const Matrix& bottom) {
   }
 
   free(dataColData);
-} */
+}
 
 // VERSION 2 OF PARALLEL FORWARD IMPLEMENTATION
-void Conv::forward(const Matrix& bottom) {
+void Conv::forwardVersion_2(const Matrix& bottom) {
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
@@ -156,6 +155,25 @@ void Conv::forward(const Matrix& bottom) {
 
   free(h_C);
   free(dataColData);
+}
+
+void Conv::forward(const Matrix& bottom) {
+  switch (config::currentVersion)
+  {
+  case 0:
+    Conv::forwardVersion_0(bottom);
+    break;
+  case 1:
+    Conv::forwardVersion_1(bottom);
+    break;
+  case 2:
+    Conv::forwardVersion_2(bottom);
+    break;
+  
+  default:
+    Conv::forwardOriginal(bottom);
+    break;
+  }
 }
 
 // image size: Vector (height_in * width_in * channel_in)

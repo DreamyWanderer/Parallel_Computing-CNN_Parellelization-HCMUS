@@ -45,6 +45,10 @@ private:
   { init(); }
 
   void forward(const Matrix& bottom);
+  void forwardOriginal(const Matrix& bottom);
+  void forwardVersion_0(const Matrix& bottom);
+  void forwardVersion_1(const Matrix& bottom);
+  void forwardVersion_2(const Matrix& bottom);
   void backward(const Matrix& bottom, const Matrix& grad_top);
   void update(Optimizer& opt);
   void unroll(int C, int H, int W, int K, const Vector& image, Matrix& data_col);
