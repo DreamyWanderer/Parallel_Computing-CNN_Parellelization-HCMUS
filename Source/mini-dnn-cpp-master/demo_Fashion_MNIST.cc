@@ -67,6 +67,9 @@ void loadNetworkParameters(Network& network, std::string filename) {
     network.set_parameters(parameters);
     std::cout << "Parameters loaded" << std::endl;
   }
+  else {
+    std::cout << "Unable to open file " << filename << std::endl;
+  }
 }
 
 void testing(Network& dnn, MNIST& dataset, int epoch) {
@@ -77,8 +80,6 @@ void testing(Network& dnn, MNIST& dataset, int epoch) {
   float acc = compute_accuracy(dnn.output(), dataset.test_labels);
   std::cout << "Test acc: " << acc << std::endl;
   std::cout << std::endl;
-
-  saveNetworkParameters(dnn, "../../Model/parameters_check.txt");
 }
 
 int main(int argc, char** argv) {
@@ -94,7 +95,7 @@ int main(int argc, char** argv) {
   std::cout << "mnist train number: " << n_train << std::endl;
   std::cout << "mnist test number: " << dataset.test_labels.cols() << std::endl;
   // file to save parameters
-  std::string filename = "../../Model/parameters.txt";
+  std::string filename = "../../../Model/parameters.txt";
   
   // dnn
   Network dnn;
