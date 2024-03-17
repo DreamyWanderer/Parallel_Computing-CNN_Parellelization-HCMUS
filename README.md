@@ -1,6 +1,6 @@
 # Parallel Computation Course Repository - HCMUS-VNUHCM - Final Project
 
-## Inforation
+## Information
 
 - Topic: CNN Architecture Parallelization
 - Student: Nguyễn Thế Hoàng (20120090)
